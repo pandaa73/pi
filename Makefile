@@ -24,14 +24,14 @@ C_SOURCES 	:= $(call rwildcard,$(SRC_DIR),*.c)
 C_OBJECTS 	:= $(patsubst %.c,$(BUILD_SUB)/%.o,$(C_SOURCES))
 C_DEPENDS 	:= $(patsubst %.c,$(BUILD_SUB)/%.d,$(C_SOURCES))
 
-CC_FLAGS_debug 		:= -g -fsanitize=address,leak -Og -D DEBUG
-CC_FLAGS_release 	:= -O2
+CC_FLAGS_debug 		:= -g -fsanitize=address,leak -Og -DPLG_LOGLEVEL_INFO
+CC_FLAGS_release 	:= -O2 -DPLG_LOGLEVEL_WARN
 
 LD_FLAGS_debug		:= -g -fsanitize=address,leak -Og
 LD_FLAGS_release	:= -O2
 
 CC 			:= gcc
-CC_FLAGS 	:= -std=c89 -Wall -Wextra -pedantic $(CC_FLAGS_$(BUILD))
+CC_FLAGS 	:= -std=c99 -Wall -Wextra -pedantic $(CC_FLAGS_$(BUILD))
 
 LD			:= gcc
 LD_FLAGS 	:= -flto $(LD_FLAGS_$(BUILD))
