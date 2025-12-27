@@ -65,13 +65,17 @@ enum pi_opcode_t {
     PIOP_SIZE
 };
 
+struct pi_port_t {
+    uint8_t (*reader)(void);
+    void (*writer)(uint8_t);
+};
+
 struct pi_emulator_t {
     uint8_t flags;
     uint8_t regs[REGISTERS_LEN];
 
     uint8_t mem[MEMORY_LEN];
-    uint8_t *ports_in[PORTS_LEN];
-    uint8_t *ports_out[PORTS_LEN];
+    struct pi_port_t ports[PORTS_LEN];
 
     uint16_t callstack_ptr;
     uint16_t callstack[CALLSTACK_LEN];
@@ -85,8 +89,7 @@ struct pi_emulator_t {
 void pi_emulator_init(struct pi_emulator_t *emulator);
 void pi_emulator_load_ports(
     struct pi_emulator_t *emulator,
-    uint8_t *ports_in[PORTS_LEN],
-    uint8_t *ports_out[PORTS_LEN]
+    struct pi_port_t ports_in[PORTS_LEN]
 );
 
 void pi_emulator_load_program(

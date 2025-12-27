@@ -2,18 +2,24 @@
 
 #include <stdio.h>
 
-int main(void) {
-    uint8_t ports[2 * PORTS_LEN];
-    uint8_t *ports_in[PORTS_LEN], *ports_out[PORTS_LEN];
-    for(size_t i = 0; i < PORTS_LEN; ++i) {
-        ports_in[i] = &ports[i];
-        ports_out[i] = &ports[i + PORTS_LEN];
-    }
+uint8_t reader(void) {
+    printf("PORT: Please input a number: ");
 
-    printf("Enter two numbers to sum: ");
-    int a, b; scanf("%d %d", &a, &b);
-    *ports_in[0] = (uint8_t)a;
-    *ports_in[1] = (uint8_t)b;
+    int x; scanf("%d", &x);
+
+    return (uint8_t)x;
+}
+
+void writer(uint8_t value) {
+    printf("PORT: %d\n", (int)value);
+}
+
+int main(void) {
+    struct pi_port_t ports[PORTS_LEN];
+    for(size_t i = 0; i < PORTS_LEN; ++i) {
+        ports[i].reader = reader;
+        ports[i].writer = writer;
+    }
 
     uint16_t program[MAX_PROGRAM_LEN] = {
         0b1111100100000000, // PLD r1, p0
@@ -25,12 +31,10 @@ int main(void) {
 
     struct pi_emulator_t emulator;
     pi_emulator_init(&emulator);
-    pi_emulator_load_ports(&emulator, ports_in, ports_out);
+    pi_emulator_load_ports(&emulator, ports);
     pi_emulator_load_program(&emulator, program);
 
     pi_emulator_execute(&emulator);
-
-    printf("%d + %d = %d\n", a, b, (int)*ports_out[0]);
 
     return 0;
 }
