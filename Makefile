@@ -31,7 +31,7 @@ LD_FLAGS_debug		:= -g -fsanitize=address,leak -Og
 LD_FLAGS_release	:= -O2
 
 CC 			:= gcc
-CC_FLAGS 	:= -std=c99 -Wall -Wextra -pedantic $(CC_FLAGS_$(BUILD))
+CC_FLAGS 	:= -std=c23 -Wall -Wextra -pedantic $(CC_FLAGS_$(BUILD))
 
 LD			:= gcc
 LD_FLAGS 	:= -flto $(LD_FLAGS_$(BUILD))

@@ -219,7 +219,7 @@ static inline int sof(struct pi_emulator_t *emulator) {
 /* ========================================================================== */
 
 static inline void  nop(struct pi_emulator_t *emulator) {
-    return;
+    (void)emulator;
 }
 
 static inline void  hlt(struct pi_emulator_t *emulator) {
