@@ -80,6 +80,8 @@ struct pi_emulator_t {
 
     uint16_t inst_ptr;
     uint16_t program[MAX_PROGRAM_LEN];
+
+    int urandom_fd;
 };
 
 void pi_emulator_init(struct pi_emulator_t *emulator);

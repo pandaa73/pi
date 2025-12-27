@@ -4,6 +4,8 @@
 
 #include <string.h>
 #include <limits.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 static inline uint8_t __rsh(uint8_t x, uint8_t n) {
     uint8_t mask = (CHAR_BIT * sizeof(x) - 1);
@@ -35,6 +37,16 @@ static inline int8_t __ars(int8_t x, uint8_t n) {
     n &= mask;
 
     return x >> n;
+}
+
+static inline uint8_t gen_random_byte(struct pi_emulator_t *emulator) {
+    uint8_t x;
+
+    if(read(emulator->urandom_fd, &x, 1) != 1) {
+        PLG_FATAL("Failed to read from `/dev/urandom`");
+    }
+
+    return x;
 }
 
 /* ========================================================================== */
@@ -106,6 +118,11 @@ void pi_emulator_init(struct pi_emulator_t *emulator) {
     if(!emulator) { PLG_FATAL("init: emulator is NULL"); }
 
     memset(emulator, 0x00, sizeof(*emulator));
+
+    emulator->urandom_fd = open("/dev/urandom", O_RDONLY);
+    if(emulator->urandom_fd < 0) {
+        PLG_FATAL("init: failed to open `/dev/urandom`");
+    }
 }
 
 void pi_emulator_load_ports(
@@ -132,7 +149,7 @@ void pi_emulator_load_program(
     }
 }
 
-void __unsafe_pi_emulator_step(struct pi_emulator_t *emulator) {
+static inline void unsafe_pi_emulator_step(struct pi_emulator_t *emulator) {
     const uint16_t instruction = emulator->program[emulator->inst_ptr];
 
     /*
@@ -146,17 +163,17 @@ void __unsafe_pi_emulator_step(struct pi_emulator_t *emulator) {
     emulator->inst_ptr = (emulator->inst_ptr + 1) % MAX_PROGRAM_LEN;
 }
 
-void pi_emulator_step(struct pi_emulator_t *emulator) {
+inline void pi_emulator_step(struct pi_emulator_t *emulator) {
     if(!emulator) { PLG_FATAL("step: emulator is NULL"); }
 
-    __unsafe_pi_emulator_step(emulator);
+    unsafe_pi_emulator_step(emulator);
 }
 
 void pi_emulator_execute(struct pi_emulator_t *emulator) {
     if(!emulator) { PLG_FATAL("execute: emulator is NULL"); }
 
     while((emulator->flags & PIFLG_HLT) == 0) {
-        __unsafe_pi_emulator_step(emulator);
+        unsafe_pi_emulator_step(emulator);
     }
 }
 
@@ -456,7 +473,7 @@ static inline void  ars(struct pi_emulator_t *emulator) {
     }
 }
 
-static void rshi(struct pi_emulator_t *emulator) {
+static inline void rshi(struct pi_emulator_t *emulator) {
     const uint16_t instruction = emulator->program[emulator->inst_ptr];
 
     const uint16_t A = (instruction >> 8) & 0x07;
@@ -470,7 +487,7 @@ static void rshi(struct pi_emulator_t *emulator) {
     }
 }
 
-static void lshi(struct pi_emulator_t *emulator) {
+static inline void lshi(struct pi_emulator_t *emulator) {
     const uint16_t instruction = emulator->program[emulator->inst_ptr];
 
     const uint16_t A = (instruction >> 8) & 0x07;
@@ -484,7 +501,7 @@ static void lshi(struct pi_emulator_t *emulator) {
     }
 }
 
-static void rtli(struct pi_emulator_t *emulator) {
+static inline void rtli(struct pi_emulator_t *emulator) {
     const uint16_t instruction = emulator->program[emulator->inst_ptr];
 
     const uint16_t A = (instruction >> 8) & 0x07;
@@ -498,7 +515,7 @@ static void rtli(struct pi_emulator_t *emulator) {
     }
 }
 
-static void arsi(struct pi_emulator_t *emulator) {
+static inline void arsi(struct pi_emulator_t *emulator) {
     const uint16_t instruction = emulator->program[emulator->inst_ptr];
 
     const uint16_t A = (instruction >> 8) & 0x07;
@@ -517,7 +534,7 @@ static void arsi(struct pi_emulator_t *emulator) {
     }
 }
 
-static void  mst(struct pi_emulator_t *emulator) {
+static inline void  mst(struct pi_emulator_t *emulator) {
     const uint16_t instruction = emulator->program[emulator->inst_ptr];
 
     const uint16_t A = (instruction >> 8) & 0x07;
@@ -526,7 +543,7 @@ static void  mst(struct pi_emulator_t *emulator) {
     emulator->mem[emulator->regs[B]] = emulator->regs[A];
 }
 
-static void  mld(struct pi_emulator_t *emulator) {
+static inline void  mld(struct pi_emulator_t *emulator) {
     const uint16_t instruction = emulator->program[emulator->inst_ptr];
 
     const uint16_t A = (instruction >> 8) & 0x07;
@@ -535,7 +552,7 @@ static void  mld(struct pi_emulator_t *emulator) {
     emulator->regs[A] = emulator->mem[emulator->regs[B]];
 }
 
-static void  pst(struct pi_emulator_t *emulator) {
+static inline void  pst(struct pi_emulator_t *emulator) {
     const uint16_t instruction = emulator->program[emulator->inst_ptr];
 
     const uint16_t A    = (instruction >> 8) & 0x07;
@@ -546,13 +563,15 @@ static void  pst(struct pi_emulator_t *emulator) {
     }
 }
 
-static void  pld(struct pi_emulator_t *emulator) {
+static inline void  pld(struct pi_emulator_t *emulator) {
     const uint16_t instruction = emulator->program[emulator->inst_ptr];
 
     const uint16_t A    = (instruction >> 8) & 0x07;
     const uint16_t port = (instruction >> 0) & 0x07;
 
-    if(emulator->ports[port] != NULL) {
+    if(((instruction >> 3) & 0x01) != 0) {
+        emulator->regs[A] = gen_random_byte(emulator);
+    } else if(emulator->ports[port] != NULL) {
         emulator->regs[A] = *emulator->ports[port];
     }
 }
