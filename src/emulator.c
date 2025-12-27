@@ -127,13 +127,16 @@ void pi_emulator_init(struct pi_emulator_t *emulator) {
 
 void pi_emulator_load_ports(
     struct pi_emulator_t *emulator,
-    const port_t ports[PORTS_LEN]
+    uint8_t *ports_in[PORTS_LEN],
+    uint8_t *ports_out[PORTS_LEN]
 ) {
-    if(!emulator) { PLG_FATAL("load_ports: emulator is NULL"); }
-    if(!ports)    { PLG_FATAL("load_ports: ports is NULL"); }
+    if(!emulator)  { PLG_FATAL("load_ports: emulator is NULL"); }
+    if(!ports_in)  { PLG_FATAL("load_ports: ports_in is NULL"); }
+    if(!ports_out) { PLG_FATAL("load_ports: ports_out is NULL"); }
 
     for(uint16_t i = 0; i < PORTS_LEN; ++i) {
-        emulator->ports[i] = ports[i];
+        emulator->ports_in[i] = ports_in[i];
+        emulator->ports_out[i] = ports_out[i];
     }
 }
 
@@ -558,8 +561,8 @@ static inline void  pst(struct pi_emulator_t *emulator) {
     const uint16_t A    = (instruction >> 8) & 0x07;
     const uint16_t port = (instruction >> 0) & 0x07;
 
-    if(emulator->ports[port] != NULL) {
-        *emulator->ports[port] = emulator->regs[A];
+    if(emulator->ports_out[port] != NULL) {
+        *emulator->ports_out[port] = emulator->regs[A];
     }
 }
 
@@ -571,7 +574,7 @@ static inline void  pld(struct pi_emulator_t *emulator) {
 
     if(((instruction >> 3) & 0x01) != 0) {
         emulator->regs[A] = gen_random_byte(emulator);
-    } else if(emulator->ports[port] != NULL) {
-        emulator->regs[A] = *emulator->ports[port];
+    } else if(emulator->ports_in[port] != NULL) {
+        emulator->regs[A] = *emulator->ports_in[port];
     }
 }

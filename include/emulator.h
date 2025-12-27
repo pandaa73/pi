@@ -9,9 +9,6 @@
 #define CALLSTACK_LEN   32
 #define MAX_PROGRAM_LEN 2048
 
-typedef uint8_t *port_t;
-typedef unsigned short uint16_t;
-
 enum pi_flag_t {
     PIFLG_ZERO = 0x01,
     PIFLG_MSB  = 0x02,
@@ -73,7 +70,8 @@ struct pi_emulator_t {
     uint8_t regs[REGISTERS_LEN];
 
     uint8_t mem[MEMORY_LEN];
-    port_t ports[PORTS_LEN];
+    uint8_t *ports_in[PORTS_LEN];
+    uint8_t *ports_out[PORTS_LEN];
 
     uint16_t callstack_ptr;
     uint16_t callstack[CALLSTACK_LEN];
@@ -87,7 +85,8 @@ struct pi_emulator_t {
 void pi_emulator_init(struct pi_emulator_t *emulator);
 void pi_emulator_load_ports(
     struct pi_emulator_t *emulator,
-    const port_t ports[PORTS_LEN]
+    uint8_t *ports_in[PORTS_LEN],
+    uint8_t *ports_out[PORTS_LEN]
 );
 
 void pi_emulator_load_program(
